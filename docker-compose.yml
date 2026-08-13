@@ -1,0 +1,42 @@
+# 默认：SQLite 文件卷 + 上传卷（开箱即用）
+# Postgres：docker compose --profile postgres up -d
+#   并将 packages/db/prisma/schema.prisma 的 provider 改为 postgresql，
+#   DATABASE_URL=postgresql://campus:campus@postgres:5432/campus_market?schema=public 后 migrate
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret-at-least-32}
+      DATABASE_URL: ${DATABASE_URL:-file:/data/prod.db}
+      UPLOAD_BASE_URL: ${UPLOAD_BASE_URL:-http://localhost:3000/uploads}
+      UPLOAD_STORAGE: local
+      UPLOAD_LOCAL_ROOT_DIR: /app/apps/server/public/uploads
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    volumes:
+      - db_data:/data
+      - uploads_data:/app/apps/server/public/uploads
+    restart: unless-stopped
+
+  postgres:
+    profiles: ["postgres"]
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: campus
+      POSTGRES_PASSWORD: campus
+      POSTGRES_DB: campus_market
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  uploads_data:
+  pg_data:

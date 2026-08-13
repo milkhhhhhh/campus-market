@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  --admin-sidebar-width: 16rem;
+  --admin-bg: #f8fafc;
+  --admin-sidebar-bg: #0f172a;
+  --cm-bg: #f8f9ff;
+  --cm-surface: #ffffff;
+  --cm-surface-low: #eff4ff;
+  --cm-surface-high: #e4e9f7;
+  --cm-primary: #004ac6;
+  --cm-primary-container: #2563eb;
+  --cm-on-surface: #0b1c30;
+  --cm-on-surface-variant: #434655;
+  --cm-outline: #737686;
+  --cm-secondary: #fea619;
+}
+
+body {
+  margin: 0;
+  font-family:
+    "PingFang SC",
+    "Helvetica Neue",
+    "Noto Sans SC",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  background: var(--admin-bg);
+  color: #0f172a;
+}
+
+.site-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--cm-bg);
+  color: var(--cm-on-surface);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.site-main {
+  /* 为底部 TabBar 留出空间（仅小屏） */
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 767px) {
+  .site-main {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+.site-tabbar {
+  /* 安全区已在内部 padding 处理 */
+}

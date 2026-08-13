@@ -1,0 +1,295 @@
+// campus-market 数据库模型
+//
+// 起步数据库：SQLite。切换到 PostgreSQL 时的改动点集中在文件顶部与各枚举字段注释：
+//   1) datasource.provider: "sqlite" -> "postgresql"
+//   2) DATABASE_URL: "file:./dev.db" -> "postgresql://user:pass@host:5432/campus_market?schema=public"
+//   3) 枚举: 所有 "// enum: XxxYyy" 标注的 String 字段改为原生 enum（在文件顶部声明 enum 块）
+//   4) images: String(JSON) -> String[]（PG 原生数组），并移除应用层 JSON parse/stringify
+//   5) 重新执行 prisma migrate dev 生成 PG 迁移（SQLite 迁移历史与 PG 不兼容）
+//
+// 约定：金额字段单位为「分」(Int)；枚举字段取值与 @campus/shared 保持一致。
+// SQLite 枚举字符串取值：
+//   UserRole: STUDENT / ADMIN
+//   VerifyStatus: UNVERIFIED / PENDING / APPROVED / REJECTED
+//   ListingType: SALE / RENT
+//   ProductCondition: NEW / LIKE_NEW / GOOD / FAIR / POOR
+//   ProductStatus: DRAFT / ON_SALE / LOCKED / SOLD / OFF_SHELF
+//   RentalStatus: AVAILABLE / RENTED / OFF_SHELF
+//   OrderStatus: PENDING / PAID / SHIPPED / COMPLETED / CANCELLED / REFUNDING / REFUNDED
+//   RentalOrderStatus: PENDING / PAID / IN_USE / RETURNED / COMPLETED / CANCELLED / OVERDUE
+//   ReportStatus: PENDING / REVIEWING / RESOLVED / DISMISSED
+//   MessageType: TEXT / IMAGE / STICKER / SYSTEM / LISTING_CARD
+//   StickerFavoriteKind: BUILTIN / IMAGE
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  openId       String   @unique
+  unionId      String?
+  // 网页/App 账号登录名（邮箱或用户名），与 openId 独立
+  username     String?  @unique
+  nickname     String
+  avatar       String?
+  role         String   @default("STUDENT") // enum: UserRole
+  verifyStatus String   @default("UNVERIFIED") // enum: VerifyStatus
+  school       String?
+  studentId    String?
+  verifyProof  String? // JSON 序列化的图片 URL 数组（认证材料）
+  adminUsername String? @unique
+  passwordHash  String?
+  banned        Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  products           Product[]
+  rentalItems        RentalItem[]
+  ordersAsBuyer      Order[]        @relation("OrderBuyer")
+  ordersAsSeller     Order[]        @relation("OrderSeller")
+  rentalOrdersRenter RentalOrder[]  @relation("RentalOrderRenter")
+  rentalOrdersOwner  RentalOrder[]  @relation("RentalOrderOwner")
+  favorites          Favorite[]
+  stickerFavorites   StickerFavorite[]
+  messages           Message[]
+  reportsFiled       Report[]       @relation("ReportReporter")
+  reportsHandled     Report[]       @relation("ReportHandler")
+  conversationsAsA   Conversation[] @relation("ConversationUserA")
+  conversationsAsB   Conversation[] @relation("ConversationUserB")
+  deviceTokens       DeviceToken[]
+
+  @@unique([school, studentId])
+  @@index([verifyStatus])
+}
+
+/// App 推送设备令牌（FCM / APNs 等）
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String
+  platform  String // android | ios | web
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@index([platform])
+}
+
+model Category {
+  id       String  @id @default(cuid())
+  name     String
+  parentId String?
+  sort     Int     @default(0)
+  icon     String?
+
+  parent      Category?    @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[]   @relation("CategoryTree")
+  products    Product[]
+  rentalItems RentalItem[]
+
+  @@unique([parentId, name])
+  @@index([parentId])
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  price         Int // 单位：分
+  condition     String   @default("GOOD") // enum: ProductCondition
+  status        String   @default("DRAFT") // enum: ProductStatus
+  images        String   @default("[]") // JSON 序列化的图片 URL 数组（SQLite 无数组）
+  categoryId    String
+  sellerId      String
+  viewCount     Int      @default(0)
+  favoriteCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id])
+  seller   User     @relation(fields: [sellerId], references: [id])
+  orders   Order[]
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([categoryId, status, createdAt])
+  @@index([status, viewCount])
+}
+
+model RentalItem {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  dailyPrice   Int // 日租金，单位：分
+  deposit      Int // 押金，单位：分
+  minDays      Int      @default(1)
+  maxDays      Int?
+  rentalStatus String   @default("AVAILABLE") // enum: RentalStatus
+  images       String   @default("[]") // JSON 序列化的图片 URL 数组
+  categoryId   String
+  ownerId      String
+  viewCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  category     Category      @relation(fields: [categoryId], references: [id])
+  owner        User          @relation(fields: [ownerId], references: [id])
+  rentalOrders RentalOrder[]
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@index([rentalStatus])
+  @@index([categoryId, rentalStatus, createdAt])
+  @@index([rentalStatus, viewCount])
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  productId String
+  buyerId   String
+  sellerId  String
+  amount    Int // 成交金额，单位：分
+  status    String   @default("PENDING") // enum: OrderStatus
+  remark    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+  buyer   User    @relation("OrderBuyer", fields: [buyerId], references: [id])
+  seller  User    @relation("OrderSeller", fields: [sellerId], references: [id])
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([productId])
+  @@index([status])
+  @@index([buyerId, status, createdAt])
+  @@index([sellerId, status, createdAt])
+}
+
+model RentalOrder {
+  id           String   @id @default(cuid())
+  rentalItemId String
+  renterId     String
+  ownerId      String
+  dailyPrice   Int // 下单时日租金快照，单位：分
+  deposit      Int // 押金快照，单位：分
+  startDate    DateTime
+  endDate      DateTime
+  days         Int
+  totalAmount  Int // dailyPrice * days + deposit，单位：分
+  status       String   @default("PENDING") // enum: RentalOrderStatus
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  rentalItem RentalItem @relation(fields: [rentalItemId], references: [id])
+  renter     User       @relation("RentalOrderRenter", fields: [renterId], references: [id])
+  owner      User       @relation("RentalOrderOwner", fields: [ownerId], references: [id])
+
+  @@index([rentalItemId])
+  @@index([renterId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([renterId, status, createdAt])
+  @@index([ownerId, status, createdAt])
+  @@index([status, endDate])
+}
+
+model Favorite {
+  id          String   @id @default(cuid())
+  userId      String
+  listingType String // enum: ListingType（SALE=商品 / RENT=租借物品）
+  targetId    String // 关联 Product.id 或 RentalItem.id
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, listingType, targetId])
+  @@index([userId])
+}
+
+model StickerFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  /// BUILTIN:campus/ok 或 IMAGE:https://...
+  key       String
+  kind      String // enum: StickerFavoriteKind
+  stickerId String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId, createdAt])
+}
+
+model Conversation {
+  id            String    @id @default(cuid())
+  userAId       String
+  userBId       String
+  listingType   String? // enum: ListingType（可空）
+  listingId     String?
+  // 唯一上下文键：私聊使用 DIRECT；挂牌会话使用 `${listingType}:${listingId}`。
+  // 单独存储以规避 SQLite 复合唯一约束中 NULL 可重复的问题。
+  contextKey    String    @default("DIRECT")
+  lastMessage   String?
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+
+  userA    User      @relation("ConversationUserA", fields: [userAId], references: [id])
+  userB    User      @relation("ConversationUserB", fields: [userBId], references: [id])
+  messages Message[]
+
+  @@unique([userAId, userBId, contextKey])
+  @@index([userAId])
+  @@index([userBId])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  type           String   @default("TEXT") // enum: MessageType
+  content        String
+  read           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([conversationId, read, senderId])
+}
+
+model Report {
+  id           String   @id @default(cuid())
+  reporterId   String
+  targetType   String // 被举报对象类型：PRODUCT / RENTAL / USER / MESSAGE
+  targetId     String
+  reason       String
+  status       String   @default("PENDING") // enum: ReportStatus
+  handlerId    String?
+  handleRemark String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reporter User  @relation("ReportReporter", fields: [reporterId], references: [id])
+  handler  User? @relation("ReportHandler", fields: [handlerId], references: [id])
+
+  @@index([status])
+  @@index([targetType, targetId])
+  @@index([reporterId])
+  @@index([handlerId])
+}

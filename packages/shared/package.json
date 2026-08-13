@@ -1,0 +1,21 @@
+{
+  "name": "@campus/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "校园二手交易与闲置租借平台的共享层：类型、枚举、API 路径常量",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

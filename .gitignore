@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+out/
+.next/
+.turbo/
+
+# TypeScript
+*.tsbuildinfo
+
+# Prisma / SQLite
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+packages/db/prisma/*.db
+packages/db/prisma/migrations/dev.db*
+
+# Uploaded files (keep directory placeholder)
+apps/server/public/uploads/**
+!apps/server/public/uploads/.gitkeep
+
+# Environment (keep .env.example)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage & test
+coverage/
+.nyc_output/
+
+# Editor / IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS
+.DS_Store
+Thumbs.db
