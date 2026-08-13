@@ -231,6 +231,27 @@ test(
         msgCtx,
       );
 
+      const imageSent = await expectStatus(
+        await messagesRoute.POST(
+          request(
+            `http://localhost/api/chat/conversations/${conversationId}/messages`,
+            "POST",
+            {
+              type: "IMAGE",
+              content: "https://example.com/chat-test.png",
+            },
+            tokenA,
+          ),
+          msgCtx,
+        ),
+        201,
+      );
+      assert.equal(imageSent.data!.type, "IMAGE");
+      assert.equal(
+        imageSent.data!.content,
+        "https://example.com/chat-test.png",
+      );
+
       const listForA = await expectStatus(
         await conversationsRoute.GET(
           request(
@@ -291,7 +312,12 @@ test(
       );
       assert.equal(
         (afterFetch.data!.items as unknown[]).length,
-        1,
+        2,
+      );
+      assert.ok(
+        (afterFetch.data!.items as Array<{ type: string }>).some(
+          (item) => item.type === "IMAGE",
+        ),
       );
 
       const forbidden = await expectStatus(

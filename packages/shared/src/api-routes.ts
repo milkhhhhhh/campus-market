@@ -1,7 +1,12 @@
 /**
  * 全平台 API 路径常量，前后端唯一事实来源。
- * 含参路径用函数生成；静态路径用 `as const` 固定字面量类型。
+ * 含参路径用函数生成；静态路径用 as const 固定字面量类型。
+ * 仅登记已实现的 apps/server/app/api 下 route.ts 路径。
  */
+
+export const HEALTH = {
+  check: "/api/health",
+} as const;
 
 export const AUTH = {
   /** 开发环境一键登录（非 production） */
@@ -50,12 +55,6 @@ export const RENTAL_ORDERS = {
 
 export const CATEGORIES = {
   list: "/api/categories",
-  detail: (id: string) => `/api/categories/${id}`,
-} as const;
-
-export const SEARCH = {
-  /** 综合搜索（商品 + 租借） */
-  query: "/api/search",
 } as const;
 
 export const FAVORITES = {
@@ -89,16 +88,6 @@ export const DEVICES = {
 export const ADMIN = {
   /** 管理后台账号密码登录（设置 session cookie） */
   login: "/api/admin/auth/login",
-  users: "/api/admin/users",
-  userDetail: (id: string) => `/api/admin/users/${id}`,
-  /** 校园认证审核 */
-  verifyReview: (userId: string) => `/api/admin/users/${userId}/verify`,
-  products: "/api/admin/products",
-  rentals: "/api/admin/rentals",
-  orders: "/api/admin/orders",
-  rentalOrders: "/api/admin/rental-orders",
-  categories: "/api/admin/categories",
-  categoryDetail: (id: string) => `/api/admin/categories/${id}`,
   reports: "/api/admin/reports",
   /** 举报处理 */
   reportHandle: (id: string) => `/api/admin/reports/${id}/handle`,
@@ -106,13 +95,13 @@ export const ADMIN = {
 
 /** 汇总，便于按需整体引用 */
 export const API_ROUTES = {
+  HEALTH,
   AUTH,
   PRODUCTS,
   RENTALS,
   ORDERS,
   RENTAL_ORDERS,
   CATEGORIES,
-  SEARCH,
   FAVORITES,
   CHAT,
   REPORTS,

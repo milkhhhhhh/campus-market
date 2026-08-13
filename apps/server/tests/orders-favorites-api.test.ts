@@ -259,6 +259,20 @@ test(
       );
       assert.equal(payAgain.data!.status, "PAID");
 
+      const cancelPaidDenied = await expectStatus(
+        await orderCancelRoute.POST(
+          request(
+            `http://localhost/api/orders/${orderId}/cancel`,
+            "POST",
+            {},
+            buyerToken,
+          ),
+          payCtx,
+        ),
+        409,
+      );
+      assert.equal(cancelPaidDenied.error?.code, "ORDER_STATUS_CONFLICT");
+
       const sellerPayDenied = await expectStatus(
         await orderPayRoute.POST(
           request(
@@ -460,6 +474,33 @@ test(
         where: { id: rentalId },
       });
       assert.equal(availableItem?.rentalStatus, "AVAILABLE");
+
+      const rentFavorited = await expectStatus(
+        await favoritesToggleRoute.POST(
+          request(
+            "http://localhost/api/favorites/toggle",
+            "POST",
+            { listingType: "RENT", targetId: rentalId },
+            buyerToken,
+          ),
+        ),
+        200,
+      );
+      assert.equal(rentFavorited.data!.favorited, true);
+      assert.ok(rentFavorited.data!.favorite);
+
+      const rentUnfavorited = await expectStatus(
+        await favoritesToggleRoute.POST(
+          request(
+            "http://localhost/api/favorites/toggle",
+            "POST",
+            { listingType: "RENT", targetId: rentalId },
+            buyerToken,
+          ),
+        ),
+        200,
+      );
+      assert.equal(rentUnfavorited.data!.favorited, false);
 
       const returnAgain = await expectStatus(
         await rentalReturnRoute.POST(

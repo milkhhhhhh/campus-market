@@ -3,6 +3,8 @@ import { rm } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
+import { expectStatus } from "./helpers/http";
+
 process.env.DATABASE_URL = "file:./dev.db";
 process.env.JWT_SECRET =
   "upload-test-secret-at-least-32-characters-long";
@@ -10,12 +12,6 @@ process.env.UPLOAD_BASE_URL = "http://localhost:3000/uploads";
 process.env.UPLOAD_STORAGE = "local";
 process.env.UPLOAD_MAX_FILE_SIZE = "5242880";
 process.env.UPLOAD_MAX_FILES = "9";
-
-interface ApiEnvelope {
-  success: boolean;
-  data?: { urls?: string[] };
-  error?: { code?: string };
-}
 
 function minimalPngBuffer(): Buffer {
   return Buffer.from([
@@ -52,15 +48,6 @@ function uploadRequest(
     headers: token ? { authorization: `Bearer ${token}` } : {},
     body: formData,
   });
-}
-
-async function expectStatus(
-  response: Response,
-  status: number,
-): Promise<ApiEnvelope> {
-  const body = (await response.json()) as ApiEnvelope;
-  assert.equal(response.status, status, JSON.stringify(body));
-  return body;
 }
 
 test("upload API contract", { timeout: 30_000 }, async () => {
@@ -123,8 +110,9 @@ test("upload API contract", { timeout: 30_000 }, async () => {
       ),
       201,
     );
-    assert.equal(uploaded.data!.urls!.length, 2);
-    for (const url of uploaded.data!.urls!) {
+    const uploadedUrls = uploaded.data?.urls as string[] | undefined;
+    assert.equal(uploadedUrls?.length, 2);
+    for (const url of uploadedUrls ?? []) {
       assert.ok(url.startsWith("http://localhost:3000/uploads/"));
       assert.ok(url.includes(`${userId}/`));
     }
@@ -145,10 +133,9 @@ test("upload API contract", { timeout: 30_000 }, async () => {
       ),
       201,
     );
-    assert.equal(singularField.data!.urls!.length, 1);
-    assert.ok(
-      singularField.data!.urls![0]!.startsWith("http://localhost:3000/uploads/"),
-    );
+    const singularUrls = singularField.data?.urls as string[] | undefined;
+    assert.equal(singularUrls?.length, 1);
+    assert.ok(singularUrls?.[0]?.startsWith("http://localhost:3000/uploads/"));
 
     const invalidType = await expectStatus(
       await uploadRoute.POST(
@@ -215,6 +202,36 @@ test("upload API contract", { timeout: 30_000 }, async () => {
       422,
     );
     assert.equal(fakeMime.error?.code, "UPLOAD_INVALID_FILE_CONTENT");
+
+    const tooMany = await expectStatus(
+      await uploadRoute.POST(
+        uploadRequest(
+          Array.from({ length: 10 }, (_, index) => ({
+            name: `n${index}.png`,
+            type: "image/png",
+            buffer: minimalPngBuffer(),
+          })),
+          token,
+        ),
+      ),
+      422,
+    );
+    assert.equal(tooMany.error?.code, "UPLOAD_TOO_MANY_FILES");
+
+    const invalidMultipart = await expectStatus(
+      await uploadRoute.POST(
+        new Request("http://localhost/api/upload", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ files: [] }),
+        }),
+      ),
+      422,
+    );
+    assert.equal(invalidMultipart.error?.code, "INVALID_MULTIPART");
   } finally {
     await cleanup();
   }

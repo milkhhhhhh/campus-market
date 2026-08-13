@@ -1,33 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { bodyOf, jsonRequest } from "./helpers/http";
+
 process.env.DATABASE_URL = "file:./dev.db";
 process.env.JWT_SECRET = "auth-api-test-secret-at-least-32-characters";
-
-interface ApiEnvelope {
-  success: boolean;
-  data?: Record<string, unknown>;
-  error?: { code?: string; details?: Record<string, unknown> };
-}
-
-function jsonRequest(
-  url: string,
-  body: Record<string, unknown>,
-  token?: string,
-): Request {
-  return new Request(url, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify(body),
-  });
-}
-
-async function bodyOf(response: Response): Promise<ApiEnvelope> {
-  return (await response.json()) as ApiEnvelope;
-}
 
 test(
   "authentication API contract",

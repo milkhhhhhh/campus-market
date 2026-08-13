@@ -1,0 +1,42 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  server-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Prepare SQLite schema for tests
+        working-directory: apps/server
+        env:
+          DATABASE_URL: file:./dev.db
+        run: npx prisma db push --schema=../../packages/db/prisma/schema.prisma --skip-generate
+
+      - name: Run server tests
+        working-directory: apps/server
+        env:
+          DATABASE_URL: file:./dev.db
+          JWT_SECRET: ci-test-secret-at-least-32-characters-long
+        run: npm test
