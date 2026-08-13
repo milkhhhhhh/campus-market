@@ -75,7 +75,7 @@ export default function ChatPage() {
     setError(null);
     try {
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("files", file);
       const uploaded = await siteRequest<{ urls: string[] }>(UPLOAD.file, {
         method: "POST",
         formData: fd,

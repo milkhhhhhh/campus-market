@@ -61,9 +61,10 @@ function matchesMagicBytes(
 export async function parseUploadFormFiles(
   formData: FormData,
 ): Promise<File[]> {
-  const files = formData
-    .getAll("files")
-    .filter((entry): entry is File => entry instanceof File);
+  // Accept both "files" (preferred) and legacy "file" field names.
+  const files = [...formData.getAll("files"), ...formData.getAll("file")].filter(
+    (entry): entry is File => entry instanceof File,
+  );
 
   if (files.length === 0) {
     throw new UploadValidationError(

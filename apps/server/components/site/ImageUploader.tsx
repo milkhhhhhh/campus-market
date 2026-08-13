@@ -29,7 +29,7 @@ export function ImageUploader({
       const next = [...value];
       for (const file of files.slice(0, remain)) {
         const fd = new FormData();
-        fd.append("file", file);
+        fd.append("files", file);
         const result = await siteRequest<{ urls: string[] }>(UPLOAD.file, {
           method: "POST",
           formData: fd,

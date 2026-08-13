@@ -38,11 +38,12 @@ function minimalJpegBuffer(): Buffer {
 function uploadRequest(
   files: Array<{ name: string; type: string; buffer: Buffer }>,
   token?: string,
+  fieldName: "files" | "file" = "files",
 ): Request {
   const formData = new FormData();
   for (const file of files) {
     formData.append(
-      "files",
+      fieldName,
       new File([new Uint8Array(file.buffer)], file.name, { type: file.type }),
     );
   }
@@ -127,6 +128,27 @@ test("upload API contract", { timeout: 30_000 }, async () => {
       assert.ok(url.startsWith("http://localhost:3000/uploads/"));
       assert.ok(url.includes(`${userId}/`));
     }
+
+    const singularField = await expectStatus(
+      await uploadRoute.POST(
+        uploadRequest(
+          [
+            {
+              name: "c.png",
+              type: "image/png",
+              buffer: minimalPngBuffer(),
+            },
+          ],
+          token,
+          "file",
+        ),
+      ),
+      201,
+    );
+    assert.equal(singularField.data!.urls!.length, 1);
+    assert.ok(
+      singularField.data!.urls![0]!.startsWith("http://localhost:3000/uploads/"),
+    );
 
     const invalidType = await expectStatus(
       await uploadRoute.POST(
