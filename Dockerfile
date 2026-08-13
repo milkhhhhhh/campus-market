@@ -6,10 +6,13 @@ COPY apps/server/package.json apps/server/
 COPY apps/mobile/package.json apps/mobile/
 COPY packages/db/package.json packages/db/
 COPY packages/shared/package.json packages/shared/
-RUN npm ci
+RUN npm ci \
+  && mkdir -p apps/server/node_modules packages/db/node_modules packages/shared/node_modules
 
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app
+# npm workspaces often hoist deps to the root; nested node_modules may be absent.
+# Create empty dirs in deps so these COPY steps never fail on a missing path.
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/server/node_modules ./apps/server/node_modules
 COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
