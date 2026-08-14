@@ -164,7 +164,7 @@ test("sticker message and favorites API", { timeout: 60_000 }, async () => {
           "POST",
           {
             kind: "IMAGE",
-            imageUrl: "http://127.0.0.1:3000/uploads/demo.png",
+            imageUrl: "/uploads/demo/sticker.png",
           },
           tokenB,
         ),
@@ -172,6 +172,10 @@ test("sticker message and favorites API", { timeout: 60_000 }, async () => {
       201,
     );
     assert.equal((imgFav.data as { kind: string }).kind, "IMAGE");
+    assert.equal(
+      (imgFav.data as { imageUrl: string | null }).imageUrl,
+      "/uploads/demo/sticker.png",
+    );
 
     const list = await expectStatus(
       await favoritesRoute.GET(

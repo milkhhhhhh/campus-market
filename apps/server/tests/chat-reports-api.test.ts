@@ -252,6 +252,40 @@ test(
         "https://example.com/chat-test.png",
       );
 
+      const relativeImage = await expectStatus(
+        await messagesRoute.POST(
+          request(
+            `http://localhost/api/chat/conversations/${conversationId}/messages`,
+            "POST",
+            {
+              type: "IMAGE",
+              content: "/uploads/demo/chat-relative.png",
+            },
+            tokenA,
+          ),
+          msgCtx,
+        ),
+        201,
+      );
+      assert.equal(
+        relativeImage.data!.content,
+        "/uploads/demo/chat-relative.png",
+      );
+
+      const invalidImage = await expectStatus(
+        await messagesRoute.POST(
+          request(
+            `http://localhost/api/chat/conversations/${conversationId}/messages`,
+            "POST",
+            { type: "IMAGE", content: "not-a-valid-image-ref" },
+            tokenA,
+          ),
+          msgCtx,
+        ),
+        422,
+      );
+      assert.equal(invalidImage.error?.code, "VALIDATION_ERROR");
+
       const listForA = await expectStatus(
         await conversationsRoute.GET(
           request(
@@ -312,13 +346,43 @@ test(
       );
       assert.equal(
         (afterFetch.data!.items as unknown[]).length,
-        2,
+        3,
       );
       assert.ok(
-        (afterFetch.data!.items as Array<{ type: string }>).some(
-          (item) => item.type === "IMAGE",
+        (afterFetch.data!.items as Array<{ type: string; content: string }>).some(
+          (item) =>
+            item.type === "IMAGE" &&
+            item.content === "/uploads/demo/chat-relative.png",
         ),
       );
+
+      const oversizedPage = await expectStatus(
+        await messagesRoute.GET(
+          request(
+            `http://localhost/api/chat/conversations/${conversationId}/messages?page=1&pageSize=100`,
+            "GET",
+            undefined,
+            tokenA,
+          ),
+          msgCtx,
+        ),
+        422,
+      );
+      assert.equal(oversizedPage.error?.code, "VALIDATION_ERROR");
+
+      const listPageOk = await expectStatus(
+        await messagesRoute.GET(
+          request(
+            `http://localhost/api/chat/conversations/${conversationId}/messages?page=1&pageSize=50`,
+            "GET",
+            undefined,
+            tokenA,
+          ),
+          msgCtx,
+        ),
+        200,
+      );
+      assert.ok((listPageOk.data!.items as unknown[]).length >= 1);
 
       const forbidden = await expectStatus(
         await messagesRoute.GET(

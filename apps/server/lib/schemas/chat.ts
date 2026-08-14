@@ -51,6 +51,14 @@ export const sendMessageSchema = z
     content: z.string().trim().min(1).max(5_000),
   })
   .superRefine((value, ctx) => {
+    if (value.type === "IMAGE" && !isImageRef(value.content)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["content"],
+        message: "图片地址无效",
+      });
+      return;
+    }
     if (value.type !== "STICKER") return;
     if (!isBuiltinStickerId(value.content)) {
       ctx.addIssue({

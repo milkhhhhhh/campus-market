@@ -32,7 +32,7 @@ export default function ChatPage() {
     setLoading(true);
     try {
       const data = await siteRequest<MessageListResponse>(CHAT.messages(id), {
-        query: { page: 1, pageSize: 100 },
+        query: { page: 1, pageSize: 50 },
       });
       setMessages(data.items);
     } catch (e) {

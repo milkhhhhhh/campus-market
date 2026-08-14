@@ -100,8 +100,21 @@ export async function siteRequest<T>(
         window.location.assign(`/login?next=${next}`);
       }
     }
+    const issues = err?.details?.issues;
+    const firstIssue =
+      Array.isArray(issues) &&
+      issues[0] &&
+      typeof issues[0] === "object" &&
+      issues[0] !== null &&
+      "message" in issues[0] &&
+      typeof (issues[0] as { message: unknown }).message === "string"
+        ? (issues[0] as { message: string }).message
+        : null;
+    const baseMessage = err?.message ?? `请求失败 (${res.status})`;
     throw new SiteApiError(
-      err?.message ?? `请求失败 (${res.status})`,
+      firstIssue && firstIssue !== baseMessage
+        ? `${baseMessage}（${firstIssue}）`
+        : baseMessage,
       err?.code ?? "REQUEST_FAILED",
       res.status,
     );
