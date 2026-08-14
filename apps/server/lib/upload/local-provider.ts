@@ -41,7 +41,8 @@ export class LocalStorageProvider implements StorageProvider {
 
       stored.push({
         key: relativeKey,
-        url: `${this.config.baseUrl}/${relativeKey}`,
+        // Same-origin relative URL so previews work behind any public host.
+        url: `/uploads/${relativeKey}`,
       });
     }
 

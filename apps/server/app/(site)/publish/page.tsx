@@ -50,6 +50,7 @@ export default function PublishPage() {
   const [categories, setCategories] = useState<
     Array<{ id: string; label: string }>
   >([]);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
   const [priceYuan, setPriceYuan] = useState("");
   const [condition, setCondition] = useState(ProductCondition.GOOD);
   const [dailyYuan, setDailyYuan] = useState("");
@@ -63,8 +64,19 @@ export default function PublishPage() {
     if (!ready) return;
     if (!requireLogin("/publish")) return;
     void siteRequest<CategoryTreeDTO[]>(CATEGORIES.list, { auth: false })
-      .then((tree) => setCategories(flattenCategories(tree)))
-      .catch(() => setCategories([]));
+      .then((tree) => {
+        const flat = flattenCategories(tree);
+        setCategories(flat);
+        setCategoryError(
+          flat.length === 0
+            ? "暂无可用分类，请稍后重试或联系管理员"
+            : null,
+        );
+      })
+      .catch(() => {
+        setCategories([]);
+        setCategoryError("分类加载失败，请刷新重试");
+      });
   }, [ready, requireLogin]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -219,6 +231,9 @@ export default function PublishPage() {
             </option>
           ))}
         </select>
+        {categoryError ? (
+          <p className="text-sm text-red-600">{categoryError}</p>
+        ) : null}
       </div>
 
       {kind === "SALE" ? (

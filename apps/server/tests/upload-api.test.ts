@@ -113,7 +113,7 @@ test("upload API contract", { timeout: 30_000 }, async () => {
     const uploadedUrls = uploaded.data?.urls as string[] | undefined;
     assert.equal(uploadedUrls?.length, 2);
     for (const url of uploadedUrls ?? []) {
-      assert.ok(url.startsWith("http://localhost:3000/uploads/"));
+      assert.ok(url.startsWith("/uploads/"));
       assert.ok(url.includes(`${userId}/`));
     }
 
@@ -135,7 +135,7 @@ test("upload API contract", { timeout: 30_000 }, async () => {
     );
     const singularUrls = singularField.data?.urls as string[] | undefined;
     assert.equal(singularUrls?.length, 1);
-    assert.ok(singularUrls?.[0]?.startsWith("http://localhost:3000/uploads/"));
+    assert.ok(singularUrls?.[0]?.startsWith("/uploads/"));
 
     const invalidType = await expectStatus(
       await uploadRoute.POST(
