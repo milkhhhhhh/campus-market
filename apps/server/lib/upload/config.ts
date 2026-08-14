@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import path from "node:path";
 
 import {
@@ -21,16 +20,15 @@ function parsePositiveInt(
 }
 
 /**
- * Docker standalone 的 cwd 是 /app，静态目录在 apps/server/public；
- * 本地 `next dev` / 测试的 cwd 是 apps/server，静态目录在 public。
+ * 本地/测试 cwd 多为 apps/server → public/uploads。
+ * Docker 通过 UPLOAD_LOCAL_ROOT_DIR=/data/uploads 覆盖。
  */
 function getDefaultLocalRootDir(): string {
-  const cwd = process.cwd();
-  const standalonePublic = path.join(cwd, "apps", "server", "public");
-  if (existsSync(standalonePublic)) {
-    return path.join(standalonePublic, "uploads");
-  }
-  return path.join(cwd, "public", "uploads");
+  return path.join(
+    /* turbopackIgnore: true */ process.cwd(),
+    "public",
+    "uploads",
+  );
 }
 
 function isLoopbackBaseUrl(url: string): boolean {

@@ -16,11 +16,11 @@ services:
       DATABASE_URL: ${DATABASE_URL:-file:/data/prod.db}
       UPLOAD_BASE_URL: ${UPLOAD_BASE_URL:-http://localhost:3000/uploads}
       UPLOAD_STORAGE: local
-      UPLOAD_LOCAL_ROOT_DIR: /app/apps/server/public/uploads
+      UPLOAD_LOCAL_ROOT_DIR: /data/uploads
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
     volumes:
       - db_data:/data
-      - uploads_data:/app/apps/server/public/uploads
+      - uploads_data:/data/uploads
     restart: unless-stopped
 
   postgres:

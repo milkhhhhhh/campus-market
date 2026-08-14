@@ -137,6 +137,23 @@ test("upload API contract", { timeout: 30_000 }, async () => {
     assert.equal(singularUrls?.length, 1);
     assert.ok(singularUrls?.[0]?.startsWith("/uploads/"));
 
+    const uploadsRoute = await import("@/app/uploads/[...path]/route");
+    const keyParts = singularUrls![0]!.replace(/^\/uploads\//, "").split("/");
+    const served = await uploadsRoute.GET(
+      new Request(`http://localhost${singularUrls![0]}`),
+      { params: Promise.resolve({ path: keyParts }) },
+    );
+    assert.equal(served.status, 200);
+    assert.equal(served.headers.get("content-type"), "image/png");
+    const servedBytes = Buffer.from(await served.arrayBuffer());
+    assert.ok(servedBytes.length > 0);
+
+    const traversal = await uploadsRoute.GET(
+      new Request("http://localhost/uploads/../package.json"),
+      { params: Promise.resolve({ path: ["..", "package.json"] }) },
+    );
+    assert.equal(traversal.status, 404);
+
     const invalidType = await expectStatus(
       await uploadRoute.POST(
         uploadRequest(

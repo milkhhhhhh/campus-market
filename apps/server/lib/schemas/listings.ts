@@ -5,6 +5,8 @@ import {
 } from "@campus/shared";
 import { z } from "zod";
 
+import { imageRefSchema } from "@/lib/schemas/image-ref";
+
 const page = z.coerce.number().int().min(1).default(1);
 const pageSize = z.coerce.number().int().min(1).max(50).default(20);
 const optionalMoney = z.coerce
@@ -25,10 +27,7 @@ const money = z
   .int()
   .min(0)
   .max(Number.MAX_SAFE_INTEGER);
-const images = z
-  .array(z.string().trim().max(500).url())
-  .min(1)
-  .max(9);
+const images = z.array(imageRefSchema).min(1).max(9);
 
 export const productListQuerySchema = z
   .strictObject({

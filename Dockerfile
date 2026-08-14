@@ -28,7 +28,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-ENV UPLOAD_LOCAL_ROOT_DIR=/app/apps/server/public/uploads
+ENV UPLOAD_LOCAL_ROOT_DIR=/data/uploads
 
 RUN apt-get update && apt-get install -y --no-install-recommends openssl \
   && rm -rf /var/lib/apt/lists/*
@@ -44,7 +44,7 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
 
-RUN mkdir -p /data /app/apps/server/public/uploads \
+RUN mkdir -p /data/uploads /app/apps/server/public/uploads \
   && chmod +x /app/docker-entrypoint.sh
 
 EXPOSE 3000

@@ -7,6 +7,8 @@ import type {
 } from "@campus/shared";
 import { z } from "zod";
 
+import { imageRefSchema } from "@/lib/schemas/image-ref";
+
 const usernameSchema = z
   .string()
   .trim()
@@ -45,7 +47,7 @@ export const updateProfileSchema: z.ZodType<UpdateProfileInput> =
   z
     .strictObject({
       nickname: z.string().trim().min(1).max(32).optional(),
-      avatar: z.string().trim().max(500).url().nullable().optional(),
+      avatar: imageRefSchema.nullable().optional(),
     })
     .refine(
       (value) =>
@@ -60,8 +62,5 @@ export const verifySubmitSchema: z.ZodType<VerifySubmitInput> =
       .string()
       .trim()
       .regex(/^[A-Za-z0-9_-]{4,32}$/, "学号格式不正确"),
-    proofImages: z
-      .array(z.string().trim().max(500).url())
-      .min(1)
-      .max(3),
+    proofImages: z.array(imageRefSchema).min(1).max(3),
   });

@@ -5,6 +5,8 @@ import {
 } from "@campus/shared";
 import { z } from "zod";
 
+import { isImageRef } from "@/lib/schemas/image-ref";
+
 const page = z.coerce.number().int().min(1).default(1);
 const pageSize = z.coerce.number().int().min(1).max(50).default(20);
 const id = z.string().trim().min(1).max(100);
@@ -63,7 +65,12 @@ export const addStickerFavoriteSchema = z
   .strictObject({
     kind: z.nativeEnum(StickerFavoriteKind),
     stickerId: z.string().trim().min(1).max(100).optional(),
-    imageUrl: z.string().trim().url().max(2_000).optional(),
+    imageUrl: z
+      .string()
+      .trim()
+      .max(2_000)
+      .refine(isImageRef, { message: "图片地址无效" })
+      .optional(),
   })
   .superRefine((value, ctx) => {
     if (value.kind === StickerFavoriteKind.BUILTIN) {

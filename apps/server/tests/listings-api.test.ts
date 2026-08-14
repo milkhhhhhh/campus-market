@@ -135,7 +135,7 @@ test(
         description: "用于商品接口筛选测试",
         price: 5000,
         condition: "GOOD",
-        images: ["https://example.com/product-alpha.jpg"],
+        images: ["/uploads/demo/product-alpha.jpg"],
         categoryId,
       };
       assert.equal(
@@ -309,7 +309,7 @@ test(
         deposit: 10000,
         minDays: 2,
         maxDays: 10,
-        images: ["https://example.com/rental-alpha.jpg"],
+        images: ["/uploads/demo/rental-alpha.jpg"],
         categoryId,
       };
       assert.equal(
